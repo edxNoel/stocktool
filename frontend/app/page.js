@@ -17,15 +17,15 @@ function BoxNode({ data }) {
   return (
     <div
       style={{
-        width: 200,        // fixed width
-        minHeight: 60,     // minimum height
+        width: 200,
+        minHeight: 60,
         padding: "10px",
         border: "2px solid #0070f3",
         borderRadius: 8,
         background: "white",
         boxShadow: "0px 2px 5px rgba(0,0,0,0.2)",
         wordWrap: "break-word",
-        whiteSpace: "pre-wrap", // preserve line breaks
+        whiteSpace: "pre-wrap",
       }}
     >
       {data.label}
@@ -40,14 +40,17 @@ export default function Home() {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
 
-  const nodeWidth = 220; // match BoxNode width + margin
+  const nodeWidth = 220;
   const nodeSpacing = 50;
 
+  const BACKEND_URL =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
   useEffect(() => {
-    socket = io("http://localhost:8000");
+    socket = io(BACKEND_URL, { transports: ["websocket"] });
 
     socket.on("connect", () => {
-      console.log("Connected to Socket.IO:", socket.id);
+      console.log("Connected to backend:", socket.id);
     });
 
     socket.on("node_update", (data) => {
@@ -85,7 +88,7 @@ export default function Home() {
     setNodes([]);
     setEdges([]);
     try {
-      await axios.post("http://localhost:8000/analyze", {
+      await axios.post(`${BACKEND_URL}/analyze`, {
         ticker,
         start_date: startDate,
         end_date: endDate,
