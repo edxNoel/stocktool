@@ -1,32 +1,19 @@
-# backend/main.py
-import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import yfinance as yf
-import asyncio
+import os
 from openai import AsyncOpenAI
-import numpy as np
 
-# Detect whether running in Vercel
-IS_VERCEL = bool(os.getenv("VERCEL"))
+app = FastAPI()
 
-fastapi_app = FastAPI(title="AI Stock Analyzer")
-fastapi_app.add_middleware(
+# Allow all origins (frontend can be any Vercel domain)
+app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # <- allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Use Socket.IO only in local dev (not in serverless)
-if not IS_VERCEL:
-    import socketio
-    sio = socketio.AsyncServer(async_mode="asgi", cors_allowed_origins="*")
-    app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)
-else:
-    sio = None
-    app = fastapi_app
 
 client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -42,20 +29,18 @@ async def call_gpt(prompt: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"GPT call error: {str(e)}"
-@fastapi_app.get("/")
-async def root():
-    return {"message": "Backend is running successfully!"}
 
-@fastapi_app.post("/analyze")
+@app.post("/")
 async def analyze_stock(request: Request):
+    # Handle preflight OPTIONS requests
+    if request.method == "OPTIONS":
+        return {}
+
     try:
         req = await request.json()
         ticker = req.get("ticker")
         start_date = req.get("start_date")
         end_date = req.get("end_date")
-
-        if sio:
-            await sio.emit("node_update", {"label": f"Fetching {ticker}..."})
 
         df = yf.download(ticker, start=start_date, end=end_date)
         if df.empty:
@@ -73,24 +58,8 @@ async def analyze_stock(request: Request):
         rounded = {k: round(float(v), 2) for k, v in summary.items()}
         summary_text = "\n".join([f"{k}: {v}" for k, v in rounded.items()])
 
-        prompt = f"Analyze {ticker}:\n{summary_text}"
-        ai_analysis = await call_gpt(prompt)
+        ai_analysis = await call_gpt(f"Analyze {ticker}:\n{summary_text}")
 
         return {"status": "success", "ticker": ticker, "summary": rounded, "ai_analysis": ai_analysis}
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return {"status": "error", "message": str(e)}
-
-if not IS_VERCEL:
-    @sio.event
-    async def connect(sid, environ):
-        print(f"Client connected: {sid}")
-
-    @sio.event
-    async def disconnect(sid):
-        print(f"Client disconnected: {sid}")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("backend.main:app", host="0.0.0.0", port=8000)
