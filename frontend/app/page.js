@@ -82,20 +82,25 @@ export default function Home() {
     return () => socket.disconnect();
   }, [BACKEND_URL]);
 
-  const handleAnalyze = async () => {
-    setNodes([]);
-    setEdges([]);
-    try {
-      await axios.post(`${BACKEND_URL}/analyze`, {
-        ticker,
-        start_date: startDate,
-        end_date: endDate,
-      });
-    } catch (err) {
-      console.error("Error calling backend:", err);
-      alert("Error calling backend. Check console.");
-    }
-  };
+const handleAnalyze = async () => {
+  setNodes([]);
+  setEdges([]);
+  
+  console.log("Calling backend at:", BACKEND_URL); // <-- Added logging
+
+  try {
+    await axios.post(`${BACKEND_URL}/analyze`, {
+      ticker,
+      start_date: startDate,
+      end_date: endDate,
+    });
+    console.log("Request sent successfully");
+  } catch (err) {
+    console.error("Error calling backend:", err);
+    alert("Error calling backend. Check console.");
+  }
+};
+
 
   const nodeTypes = { boxNode: BoxNode };
 
