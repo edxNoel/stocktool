@@ -5,8 +5,6 @@ import axios from "axios";
 import io from "socket.io-client";
 import ReactFlow, {
   Background,
-  Handle,
-  Position,
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
@@ -43,8 +41,8 @@ export default function Home() {
   const nodeWidth = 220;
   const nodeSpacing = 50;
 
-  const BACKEND_URL =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+  // Use environment variable or fallback
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   useEffect(() => {
     socket = io(BACKEND_URL, { transports: ["websocket"] });
@@ -82,13 +80,13 @@ export default function Home() {
     });
 
     return () => socket.disconnect();
-  }, []);
+  }, [BACKEND_URL]);
 
   const handleAnalyze = async () => {
     setNodes([]);
     setEdges([]);
     try {
-      await axios.post("https://stocktool-backend.vercel.app/analyze", {
+      await axios.post(`${BACKEND_URL}/analyze`, {
         ticker,
         start_date: startDate,
         end_date: endDate,
