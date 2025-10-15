@@ -6,3 +6,11 @@ pandas
 yfinance
 requests
 python-dotenv
+fastapi
+uvicorn
+python-socketio
+requests
+pydantic
+yfinance
+pandas
+numpy
