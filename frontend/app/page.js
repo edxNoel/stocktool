@@ -88,7 +88,7 @@ export default function Home() {
     setNodes([]);
     setEdges([]);
     try {
-      await axios.post("stocktool-backend-nrqlx8kqo-swift-ai-labs.vercel.app/analyze", {
+      await axios.post("https://stocktool-backend.vercel.app/analyze", {
         ticker,
         start_date: startDate,
         end_date: endDate,
