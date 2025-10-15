@@ -2,14 +2,11 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import io from "socket.io-client";
 import ReactFlow, {
   Background,
   ReactFlowProvider,
 } from "reactflow";
 import "reactflow/dist/style.css";
-
-let socket;
 
 function BoxNode({ data }) {
   return (
@@ -41,58 +38,16 @@ export default function Home() {
   const nodeWidth = 220;
   const nodeSpacing = 50;
 
-  // Environment variable for backend
-  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
-  useEffect(() => {
-    // Only connect Socket.IO in local dev
-    if (process.env.NODE_ENV !== "production") {
-      socket = io(BACKEND_URL, { transports: ["websocket"] });
-
-      socket.on("connect", () => {
-        console.log("Connected to backend via Socket.IO:", socket.id);
-      });
-
-      socket.on("node_update", (data) => {
-        setNodes((prev) => {
-          const newNode = {
-            id: `${prev.length}`,
-            type: "boxNode",
-            position: {
-              x: prev.length * (nodeWidth + nodeSpacing),
-              y: 0,
-            },
-            data: { label: data.label },
-          };
-
-          const newEdge =
-            prev.length > 0
-              ? {
-                  id: `e${prev.length - 1}-${prev.length}`,
-                  source: `${prev.length - 1}`,
-                  target: `${prev.length}`,
-                  animated: true,
-                }
-              : null;
-
-          if (newEdge) setEdges((prevEdges) => [...prevEdges, newEdge]);
-
-          return [...prev, newNode];
-        });
-      });
-
-      return () => socket.disconnect();
-    }
-  }, [BACKEND_URL]);
+  // Direct backend URL (no /api)
+  const BACKEND_URL =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   const handleAnalyze = async () => {
     setNodes([]);
     setEdges([]);
 
-    // Choose correct backend route for local vs Vercel
-    const analyzeUrl =
-      BACKEND_URL.replace(/\/$/, "") +
-      (process.env.NODE_ENV === "production" ? "/api/analyze" : "/analyze");
+    // Use /analyze directly on backend
+    const analyzeUrl = `${BACKEND_URL.replace(/\/$/, "")}/analyze`;
 
     console.log("Calling backend at:", analyzeUrl);
 
@@ -105,7 +60,9 @@ export default function Home() {
       console.log("Request sent successfully");
     } catch (err) {
       console.error("Error calling backend:", err);
-      alert("Error calling backend. Check console.");
+      alert(
+        "Error calling backend. Make sure the backend is deployed and CORS allows your frontend."
+      );
     }
   };
 
