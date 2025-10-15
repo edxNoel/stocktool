@@ -6,10 +6,10 @@ from openai import AsyncOpenAI
 
 app = FastAPI()
 
-# Allow all origins (frontend can be any Vercel domain)
+# Allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # <- allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,12 +30,10 @@ async def call_gpt(prompt: str) -> str:
     except Exception as e:
         return f"GPT call error: {str(e)}"
 
-@app.post("/")
+@app.post("/analyze")
 async def analyze_stock(request: Request):
-    # Handle preflight OPTIONS requests
     if request.method == "OPTIONS":
         return {}
-
     try:
         req = await request.json()
         ticker = req.get("ticker")
@@ -61,5 +59,4 @@ async def analyze_stock(request: Request):
         ai_analysis = await call_gpt(f"Analyze {ticker}:\n{summary_text}")
 
         return {"status": "success", "ticker": ticker, "summary": rounded, "ai_analysis": ai_analysis}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    exce
