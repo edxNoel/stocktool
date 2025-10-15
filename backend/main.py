@@ -42,6 +42,9 @@ async def call_gpt(prompt: str) -> str:
         return response.choices[0].message.content.strip()
     except Exception as e:
         return f"GPT call error: {str(e)}"
+@fastapi_app.get("/")
+async def root():
+    return {"message": "Backend is running successfully!"}
 
 @fastapi_app.post("/analyze")
 async def analyze_stock(request: Request):
