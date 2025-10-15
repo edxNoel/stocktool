@@ -41,66 +41,73 @@ export default function Home() {
   const nodeWidth = 220;
   const nodeSpacing = 50;
 
-  // Use environment variable or fallback
+  // Environment variable for backend
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   useEffect(() => {
-    socket = io(BACKEND_URL, { transports: ["websocket"] });
+    // Only connect Socket.IO in local dev
+    if (process.env.NODE_ENV !== "production") {
+      socket = io(BACKEND_URL, { transports: ["websocket"] });
 
-    socket.on("connect", () => {
-      console.log("Connected to backend:", socket.id);
-    });
-
-    socket.on("node_update", (data) => {
-      setNodes((prev) => {
-        const newNode = {
-          id: `${prev.length}`,
-          type: "boxNode",
-          position: {
-            x: prev.length * (nodeWidth + nodeSpacing),
-            y: 0,
-          },
-          data: { label: data.label },
-        };
-
-        const newEdge =
-          prev.length > 0
-            ? {
-                id: `e${prev.length - 1}-${prev.length}`,
-                source: `${prev.length - 1}`,
-                target: `${prev.length}`,
-                animated: true,
-              }
-            : null;
-
-        if (newEdge) setEdges((prevEdges) => [...prevEdges, newEdge]);
-
-        return [...prev, newNode];
+      socket.on("connect", () => {
+        console.log("Connected to backend via Socket.IO:", socket.id);
       });
-    });
 
-    return () => socket.disconnect();
+      socket.on("node_update", (data) => {
+        setNodes((prev) => {
+          const newNode = {
+            id: `${prev.length}`,
+            type: "boxNode",
+            position: {
+              x: prev.length * (nodeWidth + nodeSpacing),
+              y: 0,
+            },
+            data: { label: data.label },
+          };
+
+          const newEdge =
+            prev.length > 0
+              ? {
+                  id: `e${prev.length - 1}-${prev.length}`,
+                  source: `${prev.length - 1}`,
+                  target: `${prev.length}`,
+                  animated: true,
+                }
+              : null;
+
+          if (newEdge) setEdges((prevEdges) => [...prevEdges, newEdge]);
+
+          return [...prev, newNode];
+        });
+      });
+
+      return () => socket.disconnect();
+    }
   }, [BACKEND_URL]);
 
-const handleAnalyze = async () => {
-  setNodes([]);
-  setEdges([]);
-  
-  console.log("Calling backend at:", BACKEND_URL); // <-- Added logging
+  const handleAnalyze = async () => {
+    setNodes([]);
+    setEdges([]);
 
-  try {
-    await axios.post(`${BACKEND_URL}/analyze`, {
-      ticker,
-      start_date: startDate,
-      end_date: endDate,
-    });
-    console.log("Request sent successfully");
-  } catch (err) {
-    console.error("Error calling backend:", err);
-    alert("Error calling backend. Check console.");
-  }
-};
+    // Choose correct backend route for local vs Vercel
+    const analyzeUrl =
+      BACKEND_URL.replace(/\/$/, "") +
+      (process.env.NODE_ENV === "production" ? "/api/analyze" : "/analyze");
 
+    console.log("Calling backend at:", analyzeUrl);
+
+    try {
+      await axios.post(analyzeUrl, {
+        ticker,
+        start_date: startDate,
+        end_date: endDate,
+      });
+      console.log("Request sent successfully");
+    } catch (err) {
+      console.error("Error calling backend:", err);
+      alert("Error calling backend. Check console.");
+    }
+  };
 
   const nodeTypes = { boxNode: BoxNode };
 
