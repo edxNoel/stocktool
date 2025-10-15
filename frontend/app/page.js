@@ -39,7 +39,7 @@ export default function Home() {
   const nodeSpacing = 50;
 
   // Direct backend URL (no /api)
-  const BACKEND_URL = stocktool.vercel.app;
+  const BACKEND_URL = "stocktool.vercel.app";
 
   const handleAnalyze = async () => {
     setNodes([]);
